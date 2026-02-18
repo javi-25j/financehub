@@ -1,0 +1,20 @@
+{
+  "name": "FinanceHub - Panel Financiero Personal",
+  "short_name": "FinanceHub",
+  "description": "Gestión inteligente de tus finanzas personales",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%236366f1'/><text x='96' y='130' font-size='100' text-anchor='middle'>💰</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "productivity"],
+  "lang": "es"
+}

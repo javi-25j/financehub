@@ -1,13 +1,1217 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FinanceHub">
+    <meta name="description" content="Panel Financiero Personal - Gestiona tus finanzas desde cualquier dispositivo">
+    <meta name="mobile-web-app-capable" content="yes">
     <link rel="manifest" href="manifest.json">
-    <title>PWA Application</title>
+    <title>FinanceHub - Panel Financiero Personal</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #6366f1; --primary-dark: #4f46e5; --success: #10b981;
+            --warning: #f59e0b; --danger: #ef4444; --bg-light: #f8fafc;
+            --bg-white: #ffffff; --text-dark: #1e293b; --text-light: #64748b;
+            --border: #e2e8f0; --shadow: rgba(0,0,0,0.1);
+            --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        [data-theme="dark"] {
+            --bg-light: #0f172a; --bg-white: #1e293b; --text-dark: #f1f5f9;
+            --text-light: #94a3b8; --border: #334155; --shadow: rgba(0,0,0,0.3);
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-light); color: var(--text-dark); transition: all 0.3s ease; }
+
+        /* ====== PORTADA ====== */
+        #portada {
+            min-height: 100vh; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            position: relative; overflow: hidden;
+        }
+        #portada::before {
+            content: ''; position: absolute; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(99,102,241,0.15) 1px, transparent 1px);
+            background-size: 50px 50px; animation: moveBg 20s linear infinite;
+        }
+        @keyframes moveBg { 0%{transform:translate(0,0)} 100%{transform:translate(50px,50px)} }
+
+        .portada-content { position: relative; z-index: 2; text-align: center; color: white; padding: 40px; max-width: 800px; }
+        .portada-icon { font-size: 100px; margin-bottom: 30px; animation: float 3s ease-in-out infinite; display: block; }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
+
+        .portada-title { font-size: 52px; font-weight: 800; margin-bottom: 15px; background: linear-gradient(135deg,#6ee7b7,#6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .portada-subtitle { font-size: 20px; margin-bottom: 20px; opacity: 0.8; font-weight: 300; }
+
+        .portada-features { display: flex; gap: 30px; justify-content: center; margin-bottom: 50px; flex-wrap: wrap; }
+        .portada-feature { background: rgba(255,255,255,0.1); padding: 15px 25px; border-radius: 12px; font-size: 14px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
+
+        .portada-btn {
+            padding: 18px 60px; font-size: 20px;
+            background: linear-gradient(135deg,#6366f1,#10b981);
+            color: white; border: none; border-radius: 50px; cursor: pointer;
+            font-weight: 700; box-shadow: 0 10px 40px rgba(99,102,241,0.4);
+            transition: all 0.3s ease; letter-spacing: 1px;
+        }
+        .portada-btn:hover { transform: translateY(-5px); box-shadow: 0 20px 50px rgba(99,102,241,0.5); }
+
+        /* ====== APP CONTAINER ====== */
+        .app-container { display: none; }
+        .app-container.active { display: block; }
+
+        /* ====== NAV ====== */
+        .main-nav { background: var(--bg-white); box-shadow: 0 2px 10px var(--shadow); position: sticky; top: 0; z-index: 100; }
+        .nav-wrapper { max-width: 1400px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: bold; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; padding: 15px 0; }
+        .logo-icon { width: 38px; height: 38px; background: var(--gradient); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; }
+        .nav-tabs { display: flex; gap: 8px; align-items: center; }
+        .nav-tab { padding: 10px 22px; background: transparent; border: none; cursor: pointer; font-size: 15px; font-weight: 600; color: var(--text-light); border-radius: 10px; transition: all 0.3s ease; }
+        .nav-tab:hover { background: var(--bg-light); color: var(--text-dark); transform: translateY(0); }
+        .nav-tab.active { background: var(--gradient); color: white; }
+        .theme-toggle { background: var(--bg-light); border: 2px solid var(--border); padding: 8px 18px; border-radius: 50px; cursor: pointer; font-size: 18px; transition: all 0.3s ease; margin-left: 15px; }
+        .theme-toggle:hover { transform: scale(1.1); }
+
+        /* ====== SECTIONS ====== */
+        .section-content { display: none; }
+        .section-content.active { display: block; }
+
+        /* ====== LAYOUT ====== */
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px; margin: 30px 0; }
+        .kpi-card { background: var(--bg-white); padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px var(--shadow); transition: all 0.3s ease; }
+        .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 8px 30px var(--shadow); }
+        .kpi-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 15px; }
+        .kpi-label { color: var(--text-light); font-size: 14px; margin-bottom: 8px; }
+        .kpi-value { font-size: 28px; font-weight: bold; color: var(--text-dark); }
+
+        .section { background: var(--bg-white); padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px var(--shadow); margin-bottom: 30px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+        .section-title { font-size: 22px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        label { font-size: 14px; font-weight: 600; color: var(--text-light); }
+        input, select, button { padding: 12px 16px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--bg-light); color: var(--text-dark); transition: all 0.3s ease; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
+        button { background: var(--gradient); color: white; border: none; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
+
+        .btn-danger { background: var(--danger) !important; }
+        .btn-success { background: var(--success) !important; }
+        .btn-warning { background: var(--warning) !important; }
+        .btn-primary { background: var(--primary) !important; }
+        .btn-small { padding: 6px 12px !important; font-size: 12px !important; }
+
+        /* ====== GOALS ====== */
+        .goals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; margin-top: 25px; }
+        .goal-card { background: var(--bg-white); border: 2px solid var(--border); border-radius: 16px; overflow: hidden; transition: all 0.3s ease; position: relative; }
+        .goal-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px var(--shadow); }
+        .goal-card.completed { border-color: var(--success); background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.05)); }
+        .goal-image { width: 100%; height: 200px; object-fit: cover; background: var(--bg-light); }
+        .goal-content { padding: 20px; }
+        .goal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; }
+        .goal-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; font-size: 14px; }
+        .progress-bar { width: 100%; height: 12px; background: var(--bg-light); border-radius: 10px; overflow: hidden; margin-bottom: 15px; }
+        .progress-fill { height: 100%; background: var(--gradient); transition: width 0.5s ease; border-radius: 10px; }
+        .goal-actions { display: flex; gap: 10px; }
+        .goal-actions button { flex: 1; padding: 10px; font-size: 13px; }
+        .goal-edit-btn { position: absolute; top: 10px; right: 10px; background: var(--bg-white); border: 2px solid var(--border); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; transition: all 0.3s ease; z-index: 10; }
+        .goal-edit-btn:hover { background: var(--warning); border-color: var(--warning); color: white; transform: rotate(90deg); }
+
+        /* ====== CHARTS ====== */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-top: 25px; }
+        .chart-container { margin-top: 30px; padding: 20px; background: var(--bg-light); border-radius: 12px; }
+        canvas { max-width: 100%; height: auto !important; }
+
+        /* ====== HEALTH ====== */
+        .health-indicator { display: inline-block; padding: 8px 20px; border-radius: 50px; font-weight: 600; font-size: 14px; }
+        .health-excellent { background: rgba(16,185,129,0.2); color: var(--success); }
+        .health-stable { background: rgba(245,158,11,0.2); color: var(--warning); }
+        .health-risk { background: rgba(239,68,68,0.2); color: var(--danger); }
+
+        /* ====== MODAL ====== */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--bg-white); padding: 30px; border-radius: 16px; max-width: 500px; width: 90%; animation: slideIn 0.3s ease; margin: 20px; max-height: 90vh; overflow-y: auto; }
+        @keyframes slideIn { from{transform:translateY(-50px);opacity:0} to{transform:translateY(0);opacity:1} }
+        @keyframes successAnim { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+        .success-animation { animation: successAnim 0.6s ease; }
+
+        /* ====== BADGES ====== */
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-comida, .badge-food { background: rgba(239,68,68,0.2); color: var(--danger); }
+        .badge-transporte, .badge-transport { background: rgba(59,130,246,0.2); color: #3b82f6; }
+        .badge-servicios, .badge-services { background: rgba(245,158,11,0.2); color: var(--warning); }
+        .badge-entretenimiento, .badge-entertainment { background: rgba(168,85,247,0.2); color: #a855f7; }
+        .badge-otros, .badge-other { background: rgba(107,114,128,0.2); color: #6b7280; }
+
+        /* ====== QUINCENAS ====== */
+        .quincenal-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .quincenal-card { padding: 20px; background: var(--bg-light); border-radius: 12px; border-left: 4px solid var(--primary); }
+        .quincenal-card h4 { color: var(--text-light); font-size: 14px; margin-bottom: 10px; }
+        .quincenal-card .amount { font-size: 24px; font-weight: bold; color: var(--text-dark); }
+
+        .quincenas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; }
+        .quincena-section { background: var(--bg-light); padding: 25px; border-radius: 12px; border: 2px solid var(--border); }
+        .quincena-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--border); }
+        .quincena-title { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .quincena-total { font-size: 22px; font-weight: bold; color: var(--primary); }
+
+        .expense-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-white); border-radius: 8px; margin-bottom: 10px; transition: all 0.3s ease; }
+        .expense-item:hover { transform: translateX(5px); box-shadow: 0 2px 10px var(--shadow); }
+        .expense-info { flex: 1; }
+        .expense-name { font-weight: 600; margin-bottom: 5px; }
+        .expense-amount { font-size: 18px; font-weight: bold; color: var(--danger); margin-right: 10px; }
+        .expense-delete { padding: 8px 12px; font-size: 12px; border-radius: 6px; }
+        .expense-actions { display: flex; gap: 5px; }
+
+        .quincena-summary { margin-top: 20px; padding: 15px; background: var(--bg-white); border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .summary-item { text-align: center; }
+        .summary-label { font-size: 12px; color: var(--text-light); margin-bottom: 5px; }
+        .summary-value { font-size: 18px; font-weight: bold; }
+        .summary-value.positive { color: var(--success); }
+        .summary-value.negative { color: var(--danger); }
+
+        /* ====== INGRESOS SECUNDARIOS ====== */
+        .ingresos-extra-section { background: linear-gradient(135deg,rgba(16,185,129,0.1),rgba(16,185,129,0.05)); padding: 20px; border-radius: 12px; border: 2px solid var(--success); margin-top: 20px; }
+        .ingresos-extra-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .ingresos-extra-title { font-size: 18px; font-weight: bold; color: var(--success); display: flex; align-items: center; gap: 10px; }
+        .ingreso-extra-item { background: var(--bg-white); padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .aporte-disponible-btn { padding: 8px 12px; font-size: 12px; margin-top: 10px; width: 100%; }
+
+        /* ====== ORIGEN SELECTOR ====== */
+        .origen-selector { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
+        .origen-btn { padding: 12px; border: 2px solid var(--border); background: var(--bg-light); border-radius: 10px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; font-size: 12px; text-align: center; color: var(--text-dark); }
+        .origen-btn.active { border-color: var(--success); background: rgba(16,185,129,0.1); color: var(--success); }
+
+        /* ====== APORTES MODAL ====== */
+        .aportes-list { margin-top: 20px; padding: 15px; background: var(--bg-light); border-radius: 10px; }
+        .aportes-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--border); }
+        .aporte-item { background: var(--bg-white); padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .aporte-info { flex: 1; }
+        .aporte-origen-badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: 600; margin-top: 5px; }
+        .badge-quincena1 { background: rgba(99,102,241,0.2); color: var(--primary); }
+        .badge-quincena2 { background: rgba(139,92,246,0.2); color: #8b5cf6; }
+        .badge-ahorro { background: rgba(16,185,129,0.2); color: var(--success); }
+        .badge-secundario { background: rgba(34,197,94,0.2); color: #22c55e; }
+
+        /* ====== FILE INPUT ====== */
+        .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; }
+        .file-input-wrapper input[type=file] { position: absolute; left: -9999px; }
+        .file-input-label { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 16px; background: var(--bg-light); border: 2px dashed var(--border); border-radius: 10px; cursor: pointer; transition: all 0.3s ease; }
+        .file-input-label:hover { border-color: var(--primary); background: rgba(99,102,241,0.05); }
+
+        /* ====== DEUDAS ====== */
+        .debt-card { background: var(--bg-white); border: 2px solid var(--border); border-radius: 16px; padding: 22px; transition: all 0.3s ease; }
+        .debt-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px var(--shadow); }
+        .debt-card.paid { border-color: var(--success); background: linear-gradient(135deg,rgba(16,185,129,0.08),rgba(16,185,129,0.03)); }
+        .debt-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .debt-name { font-size: 17px; font-weight: bold; color: var(--text-dark); flex: 1; }
+        .debt-status { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-left: 10px; white-space: nowrap; }
+        .debt-status.pendiente { background: rgba(239,68,68,0.15); color: var(--danger); }
+        .debt-status.pagada { background: rgba(16,185,129,0.15); color: var(--success); }
+        .debt-detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
+        .debt-detail-label { font-size: 13px; color: var(--text-light); }
+        .debt-detail-value { font-size: 14px; font-weight: 700; }
+        .debt-progress-bar { width: 100%; height: 10px; background: var(--bg-light); border-radius: 10px; overflow: hidden; margin: 15px 0 8px; }
+        .debt-progress-fill { height: 100%; transition: width 0.5s ease; border-radius: 10px; }
+        .debt-actions { display: flex; gap: 8px; margin-top: 15px; }
+        .debt-actions button { flex: 1; padding: 10px; font-size: 13px; }
+
+        /* ====== EMPTY STATE ====== */
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
+        .empty-state-icon { font-size: 64px; margin-bottom: 20px; opacity: 0.5; }
+
+        /* ====== RESPONSIVE ====== */
+        @media (max-width: 768px) {
+            .portada-title { font-size: 32px; }
+            .portada-subtitle { font-size: 16px; }
+            .portada-features { flex-direction: column; align-items: center; }
+            .dashboard-grid, .goals-grid { grid-template-columns: 1fr; }
+            .form-grid { grid-template-columns: 1fr; }
+            .quincenas-grid { grid-template-columns: 1fr !important; }
+            .quincenal-info { grid-template-columns: 1fr; }
+            .nav-wrapper { flex-wrap: wrap; gap: 10px; padding: 10px; }
+            .nav-tabs { flex-wrap: wrap; gap: 5px; }
+            .nav-tab { padding: 8px 14px; font-size: 13px; }
+            .origen-selector { grid-template-columns: repeat(2,1fr); }
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to my PWA!</h1>
-    <script src="sw.js"></script>
+
+<!-- ====================================================
+     PORTADA INICIAL
+===================================================== -->
+<div id="portada">
+    <div class="portada-content">
+        <span class="portada-icon">ðŸ’°</span>
+        <h1 class="portada-title">Panel Financiero Personal</h1>
+        <p class="portada-subtitle">GestiÃ³n inteligente de tus finanzas</p>
+        <div class="portada-features">
+            <div class="portada-feature">ðŸ’µ Finanzas Personal</div>
+            <div class="portada-feature">ðŸ’³ Control de Deudas</div>
+            <div class="portada-feature">ðŸŽ¯ Metas de Ahorro</div>
+        </div>
+        <button class="portada-btn" onclick="ingresarApp()">ðŸš€ Ingresar</button>
+    </div>
+</div>
+
+<!-- ====================================================
+     APLICACIÃ“N PRINCIPAL
+===================================================== -->
+<div class="app-container" id="appContainer">
+
+    <!-- NavegaciÃ³n -->
+    <nav class="main-nav">
+        <div class="nav-wrapper">
+            <div class="logo">
+                <div class="logo-icon">ðŸ’°</div>
+                <span>FinanceHub</span>
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="cambiarSeccion('finanzas')">ðŸ’µ Finanzas Personal</button>
+                <button class="nav-tab" onclick="cambiarSeccion('deudas')">ðŸ’³ Control de Deudas</button>
+                <button class="theme-toggle" onclick="toggleTheme()">ðŸŒ™</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ====================================================
+         SECCIÃ“N 1: FINANZAS PERSONAL
+    ===================================================== -->
+    <div id="seccionFinanzas" class="section-content active">
+        <div class="container">
+
+            <!-- KPIs -->
+            <div class="dashboard-grid" id="kpiDashboard"></div>
+
+            <!-- Ingresos Quincenales -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">ðŸ’µ Ingresos Quincenales</h2>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Primera Quincena</label>
+                        <input type="text" id="ingreso1" placeholder="0" oninput="formatInputNumber(this)" onblur="saveData()">
+                    </div>
+                    <div class="form-group">
+                        <label>Segunda Quincena</label>
+                        <input type="text" id="ingreso2" placeholder="0" oninput="formatInputNumber(this)" onblur="saveData()">
+                    </div>
+                </div>
+                <div class="quincenal-info">
+                    <div class="quincenal-card">
+                        <h4>Saldo Primera Quincena</h4>
+                        <div class="amount" id="saldoQ1">$0</div>
+                    </div>
+                    <div class="quincenal-card">
+                        <h4>Saldo Segunda Quincena</h4>
+                        <div class="amount" id="saldoQ2">$0</div>
+                    </div>
+                </div>
+
+                <!-- Ingresos Secundarios -->
+                <div class="ingresos-extra-section">
+                    <div class="ingresos-extra-header">
+                        <div class="ingresos-extra-title"><span>ðŸ’Ž</span><span>Ingresos Secundarios</span></div>
+                        <button onclick="openIngresoExtraModal()" class="btn-success btn-small">âž• Agregar</button>
+                    </div>
+                    <div id="ingresosExtraList"></div>
+                    <div style="margin-top:15px;padding:15px;background:var(--bg-white);border-radius:8px;text-align:center;">
+                        <div class="summary-label">Ahorro Secundario Total</div>
+                        <div class="summary-value positive" id="ahorroSecundarioTotal" style="font-size:28px;">$0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gastos -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">ðŸ§¾ GestiÃ³n de Gastos</h2>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nombre del Gasto</label>
+                        <input type="text" id="gastoNombre" placeholder="Ej: Supermercado">
+                    </div>
+                    <div class="form-group">
+                        <label>Monto</label>
+                        <input type="text" id="gastoMonto" placeholder="0" oninput="formatInputNumber(this)">
+                    </div>
+                    <div class="form-group">
+                        <label>CategorÃ­a</label>
+                        <select id="gastoCategoria">
+                            <option value="Comida">ðŸ” Comida</option>
+                            <option value="Transporte">ðŸš— Transporte</option>
+                            <option value="Servicios">ðŸ’¡ Servicios</option>
+                            <option value="Entretenimiento">ðŸŽ® Entretenimiento</option>
+                            <option value="Otros">ðŸ“¦ Otros</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Quincena</label>
+                        <select id="gastoQuincena">
+                            <option value="1">Primera Quincena</option>
+                            <option value="2">Segunda Quincena</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="agregarGasto()">âž• Agregar Gasto</button>
+
+                <div class="quincenas-grid">
+                    <!-- Q1 -->
+                    <div class="quincena-section">
+                        <div class="quincena-header">
+                            <div class="quincena-title"><span>ðŸ“…</span><span>Primera Quincena</span></div>
+                            <div class="quincena-total" id="totalQ1">$0</div>
+                        </div>
+                        <div id="gastosQ1"></div>
+                        <div class="quincena-summary">
+                            <div class="summary-item"><div class="summary-label">Ingreso</div><div class="summary-value positive" id="ingresoQ1Display">$0</div></div>
+                            <div class="summary-item"><div class="summary-label">Gastado</div><div class="summary-value negative" id="gastadoQ1Display">$0</div></div>
+                            <div class="summary-item"><div class="summary-label">Ahorros</div><div class="summary-value" id="ahorrosQ1Display">$0</div></div>
+                            <div class="summary-item"><div class="summary-label">Disponible</div><div class="summary-value" id="disponibleQ1Display">$0</div></div>
+                        </div>
+                        <button class="aporte-disponible-btn btn-success" onclick="aportarDisponibleAhorro(1)">ðŸ’° Aportar Disponible a Ahorro Total</button>
+                    </div>
+                    <!-- Q2 -->
+                    <div class="quincena-section">
+                        <div class="quincena-header">
+                            <div class="quincena-title"><span>ðŸ“…</span><span>Segunda Quincena</span></div>
+                            <div class="quincena-total" id="totalQ2">$0</div>
+                        </div>
+                        <div id="gastosQ2"></div>
+                        <div class="quincena-summary">
+                            <div class="summary-item"><div class="summary-label">Ingreso</div><div class="summary-value positive" id="ingresoQ2Display">$0</div></div>
+                            <div class="summary-item"><div class="summary-label">Gastado</div><div class="summary-value negative" id="gastadoQ2Display">$0</div></div>
+                            <div class="summary-item"><div class="summary-label">Ahorros</div><div class="summary-value" id="ahorrosQ2Display">$0</div></div>
+                            <div class="summary-item"><div class="summary-label">Disponible</div><div class="summary-value" id="disponibleQ2Display">$0</div></div>
+                        </div>
+                        <button class="aporte-disponible-btn btn-success" onclick="aportarDisponibleAhorro(2)">ðŸ’° Aportar Disponible a Ahorro Total</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metas -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">ðŸŽ¯ Metas de Ahorro</h2>
+                    <button onclick="openGoalModal()">âž• Nueva Meta</button>
+                </div>
+                <div class="goals-grid" id="goalsGrid"></div>
+            </div>
+
+            <!-- EstadÃ­sticas -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">ðŸ“Š EstadÃ­sticas Financieras</h2>
+                    <div class="health-indicator" id="healthIndicator"></div>
+                </div>
+                <div class="stats-grid">
+                    <div class="chart-container"><canvas id="categoryChart"></canvas></div>
+                    <div class="chart-container"><canvas id="comparisonChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================================================
+         SECCIÃ“N 2: CONTROL DE DEUDAS
+    ===================================================== -->
+    <div id="seccionDeudas" class="section-content">
+        <div class="container">
+
+            <!-- KPIs Deudas -->
+            <div class="dashboard-grid" id="deudasDashboard"></div>
+
+            <!-- Formulario nueva deuda -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">âž• Agregar Nueva Deuda</h2>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nombre de la Deuda</label>
+                        <input type="text" id="deudaNombre" placeholder="Ej: PrÃ©stamo banco">
+                    </div>
+                    <div class="form-group">
+                        <label>Valor Total</label>
+                        <input type="text" id="deudaTotal" placeholder="0" oninput="formatInputNumber(this)">
+                    </div>
+                    <div class="form-group">
+                        <label>Valor Abonado</label>
+                        <input type="text" id="deudaAbonado" placeholder="0" oninput="formatInputNumber(this)">
+                    </div>
+                </div>
+                <button onclick="agregarDeuda()">âž• Agregar Deuda</button>
+            </div>
+
+            <!-- Lista de deudas -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">ðŸ’³ Mis Deudas</h2>
+                </div>
+                <div id="deudasList" class="goals-grid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ====================================================
+     MODALES FINANZAS PERSONAL
+===================================================== -->
+<!-- Modal Meta -->
+<div class="modal" id="goalModal">
+    <div class="modal-content">
+        <h2 style="margin-bottom:20px" id="goalModalTitle">ðŸŽ¯ Nueva Meta de Ahorro</h2>
+        <div class="form-group" style="margin-bottom:15px">
+            <label>Nombre del ArtÃ­culo</label>
+            <input type="text" id="goalNombre" placeholder="Ej: Laptop nueva">
+        </div>
+        <div class="form-group" style="margin-bottom:15px">
+            <label>Valor Objetivo</label>
+            <input type="text" id="goalValor" placeholder="0" oninput="formatInputNumber(this)">
+        </div>
+        <div class="form-group" style="margin-bottom:15px">
+            <label>Fecha Objetivo (Opcional)</label>
+            <input type="date" id="goalFecha">
+        </div>
+        <div class="form-group" style="margin-bottom:15px">
+            <label>Imagen del Producto</label>
+            <div class="file-input-wrapper">
+                <input type="file" id="goalImage" accept="image/*" onchange="previewImage(this)">
+                <label for="goalImage" class="file-input-label" id="goalImageLabel">ðŸ“· Seleccionar Imagen</label>
+            </div>
+            <img id="imagePreview" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;margin-top:10px;display:none;">
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px">
+            <button onclick="closeGoalModal()" class="btn-danger" style="flex:1">Cancelar</button>
+            <button onclick="crearMeta()" class="btn-success" style="flex:1" id="goalModalSubmitBtn">Crear Meta</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Aporte -->
+<div class="modal" id="aporteModal">
+    <div class="modal-content">
+        <h2 style="margin-bottom:20px">ðŸ’° Agregar Aporte</h2>
+        <div class="form-group" style="margin-bottom:15px">
+            <label>Monto del Aporte</label>
+            <input type="text" id="aporteValor" placeholder="0" oninput="formatInputNumber(this)">
+        </div>
+        <div class="form-group">
+            <label>Origen del Aporte</label>
+            <div class="origen-selector">
+                <div class="origen-btn active" onclick="selectOrigen('quincena1')" id="origenQ1">ðŸ“… Q1</div>
+                <div class="origen-btn" onclick="selectOrigen('quincena2')" id="origenQ2">ðŸ“… Q2</div>
+                <div class="origen-btn" onclick="selectOrigen('ahorro')" id="origenAhorro">ðŸ’° Ahorro</div>
+                <div class="origen-btn" onclick="selectOrigen('secundario')" id="origenSecundario">ðŸ’Ž Secund.</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px">
+            <button onclick="closeAporteModal()" class="btn-danger" style="flex:1">Cancelar</button>
+            <button onclick="confirmarAporte()" class="btn-success" style="flex:1">Agregar Aporte</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ver Aportes -->
+<div class="modal" id="aportesModal">
+    <div class="modal-content">
+        <h2 style="margin-bottom:20px">ðŸ“‹ Historial de Aportes</h2>
+        <div id="aportesListContainer"></div>
+        <button onclick="closeAportesModal()" class="btn-primary" style="width:100%;margin-top:20px">Cerrar</button>
+    </div>
+</div>
+
+<!-- Modal Ingreso Secundario -->
+<div class="modal" id="ingresoExtraModal">
+    <div class="modal-content">
+        <h2 style="margin-bottom:20px">ðŸ’Ž Nuevo Ingreso Secundario</h2>
+        <div class="form-group" style="margin-bottom:15px">
+            <label>DescripciÃ³n</label>
+            <input type="text" id="ingresoExtraDesc" placeholder="Ej: Freelance, Venta, Bono">
+        </div>
+        <div class="form-group" style="margin-bottom:15px">
+            <label>Monto</label>
+            <input type="text" id="ingresoExtraMonto" placeholder="0" oninput="formatInputNumber(this)">
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px">
+            <button onclick="closeIngresoExtraModal()" class="btn-danger" style="flex:1">Cancelar</button>
+            <button onclick="agregarIngresoExtra()" class="btn-success" style="flex:1">Agregar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Gasto -->
+<div class="modal" id="editGastoModal">
+    <div class="modal-content">
+        <h2 style="margin-bottom:20px">âœï¸ Editar Gasto</h2>
+        <div class="form-group" style="margin-bottom:15px">
+            <label>Nombre del Gasto</label>
+            <input type="text" id="editGastoNombre" placeholder="Ej: Supermercado">
+        </div>
+        <div class="form-group" style="margin-bottom:15px">
+            <label>Monto</label>
+            <input type="text" id="editGastoMonto" placeholder="0" oninput="formatInputNumber(this)">
+        </div>
+        <div class="form-group" style="margin-bottom:15px">
+            <label>CategorÃ­a</label>
+            <select id="editGastoCategoria">
+                <option value="Comida">ðŸ” Comida</option>
+                <option value="Transporte">ðŸš— Transporte</option>
+                <option value="Servicios">ðŸ’¡ Servicios</option>
+                <option value="Entretenimiento">ðŸŽ® Entretenimiento</option>
+                <option value="Otros">ðŸ“¦ Otros</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom:15px">
+            <label>Quincena</label>
+            <select id="editGastoQuincena">
+                <option value="1">Primera Quincena</option>
+                <option value="2">Segunda Quincena</option>
+            </select>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px">
+            <button onclick="closeEditGastoModal()" class="btn-danger" style="flex:1">Cancelar</button>
+            <button onclick="guardarEdicionGasto()" class="btn-success" style="flex:1">Guardar Cambios</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Deuda -->
+<div class="modal" id="editDeudaModal">
+    <div class="modal-content">
+        <h2 style="margin-bottom:20px">âœï¸ Editar Deuda</h2>
+        <div class="form-group" style="margin-bottom:15px">
+            <label>Nombre de la Deuda</label>
+            <input type="text" id="editDeudaNombre" placeholder="Ej: PrÃ©stamo bancario">
+        </div>
+        <div class="form-group" style="margin-bottom:15px">
+            <label>Valor Total</label>
+            <input type="text" id="editDeudaTotal" placeholder="0" oninput="formatInputNumber(this)">
+        </div>
+        <div class="form-group" style="margin-bottom:15px">
+            <label>Valor Abonado</label>
+            <input type="text" id="editDeudaAbonado" placeholder="0" oninput="formatInputNumber(this)">
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px">
+            <button onclick="closeEditDeudaModal()" class="btn-danger" style="flex:1">Cancelar</button>
+            <button onclick="guardarEdicionDeuda()" class="btn-success" style="flex:1">Guardar Cambios</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // VARIABLES GLOBALES
+    // ============================================================
+    let data = { ingreso1:0, ingreso2:0, gastos:[], metas:[], ingresosExtras:[], theme:'light' };
+    let deudas = [];
+    let currentGoalId = null;
+    let editingGoalId = null;
+    let editingGastoId = null;
+    let editingDeudaId = null;
+    let selectedOrigen = 'quincena1';
+    let charts = {};
+
+    // ============================================================
+    // NAVEGACIÃ“N
+    // ============================================================
+    function ingresarApp() {
+        document.getElementById('portada').style.display = 'none';
+        document.getElementById('appContainer').classList.add('active');
+        loadData();
+        loadDeudas();
+        updateDashboard();
+        renderGastosSeparados();
+        renderMetas();
+        renderIngresosExtras();
+        updateCharts();
+        renderDeudasDashboard();
+        renderDeudas();
+    }
+
+    function cambiarSeccion(seccion) {
+        document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        if (seccion === 'finanzas') {
+            document.getElementById('seccionFinanzas').classList.add('active');
+            document.querySelectorAll('.nav-tab')[0].classList.add('active');
+        } else {
+            document.getElementById('seccionDeudas').classList.add('active');
+            document.querySelectorAll('.nav-tab')[1].classList.add('active');
+            renderDeudasDashboard();
+            renderDeudas();
+        }
+    }
+
+    // ============================================================
+    // UTILIDADES
+    // ============================================================
+    function formatCOP(n) {
+        return '$' + (n < 0 ? '-' : '') + Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+    function formatInputNumber(input) {
+        let v = input.value.replace(/\./g,'').replace(/[^0-9]/g,'');
+        if (v) v = parseInt(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+        input.value = v;
+    }
+    function parseFormattedNumber(v) {
+        if (typeof v === 'string') return parseFloat(v.replace(/\./g,'')) || 0;
+        return parseFloat(v) || 0;
+    }
+    function numToFormatted(n) {
+        return n ? n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.') : '';
+    }
+
+    // ============================================================
+    // TEMA
+    // ============================================================
+    function toggleTheme() {
+        data.theme = data.theme === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', data.theme);
+        document.querySelector('.theme-toggle').textContent = data.theme === 'light' ? 'ðŸŒ™' : 'â˜€ï¸';
+        saveData(); updateCharts();
+    }
+
+    // ============================================================
+    // PERSISTENCIA FINANZAS
+    // ============================================================
+    function saveData() {
+        data.ingreso1 = parseFormattedNumber(document.getElementById('ingreso1').value);
+        data.ingreso2 = parseFormattedNumber(document.getElementById('ingreso2').value);
+        localStorage.setItem('financeData', JSON.stringify(data));
+        updateDashboard(); updateCharts(); renderGastosSeparados(); renderIngresosExtras();
+    }
+    function loadData() {
+        const saved = localStorage.getItem('financeData');
+        if (saved) {
+            data = JSON.parse(saved);
+            if (!data.ingresosExtras) data.ingresosExtras = [];
+            document.getElementById('ingreso1').value = numToFormatted(data.ingreso1);
+            document.getElementById('ingreso2').value = numToFormatted(data.ingreso2);
+            if (data.theme === 'dark') {
+                document.documentElement.setAttribute('data-theme','dark');
+                document.querySelector('.theme-toggle').textContent = 'â˜€ï¸';
+            }
+        }
+    }
+
+    // ============================================================
+    // PERSISTENCIA DEUDAS
+    // ============================================================
+    function saveDeudas() {
+        localStorage.setItem('deudasData', JSON.stringify(deudas));
+        renderDeudasDashboard(); renderDeudas();
+    }
+    function loadDeudas() {
+        const saved = localStorage.getItem('deudasData');
+        if (saved) deudas = JSON.parse(saved);
+    }
+
+    // ============================================================
+    // CÃLCULOS FINANZAS
+    // ============================================================
+    function calcularTotales() {
+        const totalIngresos = data.ingreso1 + data.ingreso2;
+        const ahorroSecundario = data.ingresosExtras.reduce((s,ie) => s+ie.monto, 0);
+        const totalGastos = data.gastos.reduce((s,g) => s+g.monto, 0);
+        const ahorrosQuincenas = data.metas.reduce((s,m) => s + m.aportes.filter(a=>a.origen==='quincena1'||a.origen==='quincena2').reduce((x,a)=>x+a.monto,0), 0);
+        const totalAhorros = data.metas.reduce((s,m) => s+m.ahorrado, 0);
+        const saldoDisponible = totalIngresos - totalGastos - ahorrosQuincenas + ahorroSecundario - (totalAhorros - ahorrosQuincenas);
+        const gastosQ1 = data.gastos.filter(g=>g.quincena===1).reduce((s,g)=>s+g.monto,0);
+        const gastosQ2 = data.gastos.filter(g=>g.quincena===2).reduce((s,g)=>s+g.monto,0);
+        const ahorrosQ1 = data.metas.reduce((s,m)=>s+m.aportes.filter(a=>a.origen==='quincena1').reduce((x,a)=>x+a.monto,0),0);
+        const ahorrosQ2 = data.metas.reduce((s,m)=>s+m.aportes.filter(a=>a.origen==='quincena2').reduce((x,a)=>x+a.monto,0),0);
+        return { totalIngresos, totalGastos, totalAhorros, ahorroSecundario, saldoDisponible,
+            saldoQ1: data.ingreso1-gastosQ1-ahorrosQ1, saldoQ2: data.ingreso2-gastosQ2-ahorrosQ2,
+            gastosQ1, gastosQ2, ahorrosQ1, ahorrosQ2,
+            porcentajeGasto: totalIngresos>0 ? (totalGastos/totalIngresos)*100 : 0 };
+    }
+
+    // ============================================================
+    // DASHBOARD FINANZAS
+    // ============================================================
+    function updateDashboard() {
+        const t = calcularTotales();
+        const kpis = [
+            {icon:'ðŸ’µ',label:'Ingreso Mensual',value:formatCOP(t.totalIngresos),color:'#6366f1'},
+            {icon:'ðŸ’¸',label:'Total Gastado',value:formatCOP(t.totalGastos),color:'#ef4444'},
+            {icon:'ðŸ’°',label:'Total Ahorrado',value:formatCOP(t.totalAhorros),color:'#10b981'},
+            {icon:'ðŸ’Ž',label:'Ahorro Secundario',value:formatCOP(t.ahorroSecundario),color:'#10b981'},
+            {icon:'ðŸ¦',label:'Saldo Disponible',value:formatCOP(t.saldoDisponible),color:t.saldoDisponible>0?'#10b981':'#ef4444'}
+        ];
+        document.getElementById('kpiDashboard').innerHTML = kpis.map(k=>`
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:${k.color}20;color:${k.color}">${k.icon}</div>
+                <div class="kpi-label">${k.label}</div>
+                <div class="kpi-value">${k.value}</div>
+            </div>`).join('');
+        document.getElementById('saldoQ1').textContent = formatCOP(t.saldoQ1);
+        document.getElementById('saldoQ2').textContent = formatCOP(t.saldoQ2);
+        document.getElementById('ahorroSecundarioTotal').textContent = formatCOP(t.ahorroSecundario);
+        const ind = document.getElementById('healthIndicator');
+        const p = t.porcentajeGasto;
+        if (p<50) { ind.className='health-indicator health-excellent'; ind.textContent='âœ… Salud Financiera Excelente'; }
+        else if (p<80) { ind.className='health-indicator health-stable'; ind.textContent='âš ï¸ Salud Financiera Estable'; }
+        else { ind.className='health-indicator health-risk'; ind.textContent='ðŸš¨ Salud Financiera en Riesgo'; }
+    }
+
+    // ============================================================
+    // INGRESOS SECUNDARIOS
+    // ============================================================
+    function openIngresoExtraModal() { document.getElementById('ingresoExtraModal').classList.add('active'); }
+    function closeIngresoExtraModal() {
+        document.getElementById('ingresoExtraModal').classList.remove('active');
+        document.getElementById('ingresoExtraDesc').value='';
+        document.getElementById('ingresoExtraMonto').value='';
+    }
+    function agregarIngresoExtra() {
+        const desc = document.getElementById('ingresoExtraDesc').value;
+        const monto = parseFormattedNumber(document.getElementById('ingresoExtraMonto').value);
+        if (!desc||!monto||monto<=0) { alert('Por favor completa todos los campos'); return; }
+        data.ingresosExtras.push({id:Date.now(),descripcion:desc,monto,fecha:new Date().toISOString()});
+        closeIngresoExtraModal(); saveData();
+    }
+    function eliminarIngresoExtra(id) {
+        if (confirm('Â¿Eliminar este ingreso secundario?')) {
+            data.ingresosExtras = data.ingresosExtras.filter(ie=>ie.id!==id); saveData();
+        }
+    }
+    function renderIngresosExtras() {
+        const c = document.getElementById('ingresosExtraList');
+        if (!data.ingresosExtras.length) { c.innerHTML='<p style="text-align:center;color:var(--text-light);padding:20px">No hay ingresos secundarios</p>'; return; }
+        c.innerHTML = data.ingresosExtras.map(ie=>`
+            <div class="ingreso-extra-item">
+                <div>
+                    <div style="font-weight:600;margin-bottom:5px">ðŸ’Ž ${ie.descripcion}</div>
+                    <div style="font-size:12px;color:var(--text-light)">${new Date(ie.fecha).toLocaleDateString()}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                    <div style="font-size:18px;font-weight:bold;color:${ie.monto>=0?'var(--success)':'var(--danger)'}">${formatCOP(ie.monto)}</div>
+                    <button onclick="eliminarIngresoExtra(${ie.id})" class="btn-danger btn-small">ðŸ—‘ï¸</button>
+                </div>
+            </div>`).join('');
+    }
+
+    // ============================================================
+    // APORTAR DISPONIBLE
+    // ============================================================
+    function aportarDisponibleAhorro(quincena) {
+        const t = calcularTotales();
+        const disponible = quincena===1 ? t.saldoQ1 : t.saldoQ2;
+        if (disponible<=0) { alert('No hay saldo disponible'); return; }
+        const montoStr = prompt(`Disponible: ${formatCOP(disponible)}\n\nÂ¿CuÃ¡nto deseas aportar?`, numToFormatted(Math.floor(disponible)));
+        if (!montoStr) return;
+        const monto = parseFormattedNumber(montoStr);
+        if (!monto||monto<=0) return;
+        if (monto>disponible) { alert('El monto excede el disponible'); return; }
+        data.ingresosExtras.push({id:Date.now(),descripcion:`Aporte desde Quincena ${quincena}`,monto,fecha:new Date().toISOString()});
+        data.gastos.push({id:Date.now(),nombre:'Aporte a Ahorro',monto,categoria:'Otros',quincena,fecha:new Date().toISOString()});
+        alert(`âœ… Se ha aportado ${formatCOP(monto)} al ahorro secundario`);
+        saveData(); renderGastosSeparados();
+    }
+
+    // ============================================================
+    // GASTOS
+    // ============================================================
+    function agregarGasto() {
+        const nombre = document.getElementById('gastoNombre').value;
+        const monto = parseFormattedNumber(document.getElementById('gastoMonto').value);
+        const categoria = document.getElementById('gastoCategoria').value;
+        const quincena = parseInt(document.getElementById('gastoQuincena').value);
+        if (!nombre||!monto||monto<=0) { alert('Por favor completa todos los campos'); return; }
+        const t = calcularTotales();
+        const saldo = quincena===1 ? t.saldoQ1 : t.saldoQ2;
+        if (monto>saldo) { alert(`Saldo insuficiente en Q${quincena}. Disponible: ${formatCOP(saldo)}`); return; }
+        data.gastos.push({id:Date.now(),nombre,monto,categoria,quincena,fecha:new Date().toISOString()});
+        document.getElementById('gastoNombre').value='';
+        document.getElementById('gastoMonto').value='';
+        saveData(); renderGastosSeparados();
+    }
+    function openEditGastoModal(id) {
+        const g = data.gastos.find(g=>g.id===id); if (!g) return;
+        editingGastoId = id;
+        document.getElementById('editGastoNombre').value = g.nombre;
+        document.getElementById('editGastoMonto').value = numToFormatted(g.monto);
+        document.getElementById('editGastoCategoria').value = g.categoria;
+        document.getElementById('editGastoQuincena').value = g.quincena;
+        document.getElementById('editGastoModal').classList.add('active');
+    }
+    function closeEditGastoModal() { document.getElementById('editGastoModal').classList.remove('active'); editingGastoId=null; }
+    function guardarEdicionGasto() {
+        const g = data.gastos.find(g=>g.id===editingGastoId); if (!g) return;
+        const nombre = document.getElementById('editGastoNombre').value;
+        const monto = parseFormattedNumber(document.getElementById('editGastoMonto').value);
+        const categoria = document.getElementById('editGastoCategoria').value;
+        const quincena = parseInt(document.getElementById('editGastoQuincena').value);
+        if (!nombre||!monto||monto<=0) { alert('Por favor completa todos los campos'); return; }
+        const t = calcularTotales();
+        const saldo = (quincena===g.quincena ? (quincena===1?t.saldoQ1:t.saldoQ2)+g.monto : (quincena===1?t.saldoQ1:t.saldoQ2));
+        if (monto>saldo) { alert(`Saldo insuficiente. Disponible: ${formatCOP(saldo)}`); return; }
+        g.nombre=nombre; g.monto=monto; g.categoria=categoria; g.quincena=quincena;
+        closeEditGastoModal(); saveData(); renderGastosSeparados();
+    }
+    function eliminarGasto(id) {
+        if (confirm('Â¿Eliminar este gasto?')) { data.gastos=data.gastos.filter(g=>g.id!==id); saveData(); renderGastosSeparados(); }
+    }
+    function getCategoryIcon(c) {
+        return {Comida:'ðŸ”',Transporte:'ðŸš—',Servicios:'ðŸ’¡',Entretenimiento:'ðŸŽ®',Otros:'ðŸ“¦'}[c]||'ðŸ“¦';
+    }
+    function renderGastosSeparados() {
+        const t = calcularTotales();
+        [1,2].forEach(q => {
+            const gastos = data.gastos.filter(g=>g.quincena===q);
+            const c = document.getElementById(`gastosQ${q}`);
+            c.innerHTML = gastos.length===0
+                ? '<div class="empty-state" style="padding:30px"><p style="font-size:14px">Sin gastos registrados</p></div>'
+                : gastos.map(g=>`
+                    <div class="expense-item">
+                        <div class="expense-info">
+                            <div class="expense-name">${getCategoryIcon(g.categoria)} ${g.nombre}</div>
+                            <span class="badge badge-${g.categoria.toLowerCase()}">${g.categoria}</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <div class="expense-amount">${formatCOP(g.monto)}</div>
+                            <div class="expense-actions">
+                                <button onclick="openEditGastoModal(${g.id})" class="btn-warning expense-delete">âœï¸</button>
+                                <button onclick="eliminarGasto(${g.id})" class="btn-danger expense-delete">ðŸ—‘ï¸</button>
+                            </div>
+                        </div>
+                    </div>`).join('');
+            document.getElementById(`totalQ${q}`).textContent = formatCOP(t[`gastosQ${q}`]);
+            document.getElementById(`ingresoQ${q}Display`).textContent = formatCOP(data[`ingreso${q}`]);
+            document.getElementById(`gastadoQ${q}Display`).textContent = formatCOP(t[`gastosQ${q}`]);
+            document.getElementById(`ahorrosQ${q}Display`).textContent = formatCOP(t[`ahorrosQ${q}`]);
+            const saldo = t[`saldoQ${q}`];
+            const el = document.getElementById(`disponibleQ${q}Display`);
+            el.textContent = formatCOP(saldo);
+            el.className = `summary-value ${saldo>=0?'positive':'negative'}`;
+        });
+    }
+
+    // ============================================================
+    // METAS DE AHORRO
+    // ============================================================
+    function openGoalModal() {
+        editingGoalId=null;
+        document.getElementById('goalModalTitle').textContent='ðŸŽ¯ Nueva Meta de Ahorro';
+        document.getElementById('goalModalSubmitBtn').textContent='Crear Meta';
+        ['goalNombre','goalValor','goalFecha'].forEach(id=>document.getElementById(id).value='');
+        document.getElementById('goalImage').value='';
+        document.getElementById('imagePreview').style.display='none';
+        document.getElementById('goalImageLabel').innerHTML='ðŸ“· Seleccionar Imagen';
+        document.getElementById('goalModal').classList.add('active');
+    }
+    function openEditGoalModal(id) {
+        const m = data.metas.find(m=>m.id===id); if (!m) return;
+        editingGoalId=id;
+        document.getElementById('goalModalTitle').textContent='âœï¸ Editar Meta de Ahorro';
+        document.getElementById('goalModalSubmitBtn').textContent='Guardar Cambios';
+        document.getElementById('goalNombre').value=m.nombre;
+        document.getElementById('goalValor').value=numToFormatted(m.valor);
+        document.getElementById('goalFecha').value=m.fecha||'';
+        if (m.imagen) { document.getElementById('imagePreview').src=m.imagen; document.getElementById('imagePreview').style.display='block'; document.getElementById('goalImageLabel').innerHTML='ðŸ“· Cambiar Imagen'; }
+        document.getElementById('goalModal').classList.add('active');
+    }
+    function closeGoalModal() { document.getElementById('goalModal').classList.remove('active'); editingGoalId=null; }
+    function previewImage(input) {
+        if (input.files&&input.files[0]) {
+            const r=new FileReader();
+            r.onload=e=>{ document.getElementById('imagePreview').src=e.target.result; document.getElementById('imagePreview').style.display='block'; document.getElementById('goalImageLabel').innerHTML='âœ… Imagen Seleccionada'; };
+            r.readAsDataURL(input.files[0]);
+        }
+    }
+    function crearMeta() {
+        const nombre=document.getElementById('goalNombre').value;
+        const valor=parseFormattedNumber(document.getElementById('goalValor').value);
+        const fecha=document.getElementById('goalFecha').value;
+        const img=document.getElementById('goalImage');
+        if (!nombre||!valor||valor<=0) { alert('Por favor completa todos los campos'); return; }
+        if (editingGoalId) {
+            const m=data.metas.find(m=>m.id===editingGoalId); if (!m) return;
+            m.nombre=nombre; m.valor=valor; m.fecha=fecha;
+            if (img.files&&img.files[0]) { const r=new FileReader(); r.onload=e=>{m.imagen=e.target.result;closeGoalModal();saveData();renderMetas();}; r.readAsDataURL(img.files[0]); }
+            else { closeGoalModal(); saveData(); renderMetas(); }
+        } else {
+            const defaultImg='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect width="400" height="300" fill="%236366f1"/%3E%3Ctext x="50%25" y="50%25" font-size="64" text-anchor="middle" fill="white"%3EðŸŽ¯%3C/text%3E%3C/svg%3E';
+            if (img.files&&img.files[0]) { const r=new FileReader(); r.onload=e=>agregarMetaConImagen(nombre,valor,fecha,e.target.result); r.readAsDataURL(img.files[0]); }
+            else agregarMetaConImagen(nombre,valor,fecha,defaultImg);
+        }
+    }
+    function agregarMetaConImagen(nombre,valor,fecha,imagen) {
+        data.metas.push({id:Date.now(),nombre,valor,fecha,imagen,ahorrado:0,aportes:[],completada:false});
+        closeGoalModal(); saveData(); renderMetas();
+    }
+    function selectOrigen(origen) {
+        selectedOrigen=origen;
+        const map={quincena1:'origenQ1',quincena2:'origenQ2',ahorro:'origenAhorro',secundario:'origenSecundario'};
+        Object.values(map).forEach(id=>document.getElementById(id).classList.remove('active'));
+        document.getElementById(map[origen]).classList.add('active');
+    }
+    function openAporteModal(id) { currentGoalId=id; selectedOrigen='quincena1'; selectOrigen('quincena1'); document.getElementById('aporteModal').classList.add('active'); }
+    function closeAporteModal() { document.getElementById('aporteModal').classList.remove('active'); document.getElementById('aporteValor').value=''; currentGoalId=null; }
+    function confirmarAporte() {
+        const monto=parseFormattedNumber(document.getElementById('aporteValor').value);
+        if (!monto||monto<=0) { alert('Ingresa un monto vÃ¡lido'); return; }
+        const t=calcularTotales();
+        if (selectedOrigen==='quincena1'&&monto>t.saldoQ1) { alert(`Saldo insuficiente Q1. Disponible: ${formatCOP(t.saldoQ1)}`); return; }
+        if (selectedOrigen==='quincena2'&&monto>t.saldoQ2) { alert(`Saldo insuficiente Q2. Disponible: ${formatCOP(t.saldoQ2)}`); return; }
+        if (selectedOrigen==='secundario'&&monto>t.ahorroSecundario) { alert(`Ahorro secundario insuficiente. Disponible: ${formatCOP(t.ahorroSecundario)}`); return; }
+        const m=data.metas.find(m=>m.id===currentGoalId); if (!m) return;
+        if (m.ahorrado+monto>m.valor) { alert(`Excede el valor de la meta. MÃ¡ximo: ${formatCOP(m.valor-m.ahorrado)}`); return; }
+        m.aportes.push({id:Date.now(),monto,origen:selectedOrigen,fecha:new Date().toISOString()});
+        m.ahorrado+=monto;
+        if (selectedOrigen==='secundario') data.ingresosExtras.push({id:Date.now(),descripcion:`Aporte a meta: ${m.nombre}`,monto:-monto,fecha:new Date().toISOString()});
+        if (m.ahorrado>=m.valor) { m.completada=true; setTimeout(()=>alert('ðŸŽ‰ Â¡Felicitaciones! Meta completada'),300); }
+        closeAporteModal(); saveData(); renderMetas();
+    }
+    function eliminarMeta(id) {
+        if (confirm('Â¿Eliminar esta meta?')) { data.metas=data.metas.filter(m=>m.id!==id); saveData(); renderMetas(); }
+    }
+    function openAportesModal(id) {
+        const m=data.metas.find(m=>m.id===id); if (!m) return;
+        currentGoalId=id;
+        const labels={quincena1:'ðŸ“… Quincena 1',quincena2:'ðŸ“… Quincena 2',ahorro:'ðŸ’° Ahorro',secundario:'ðŸ’Ž Secundario'};
+        const c=document.getElementById('aportesListContainer');
+        c.innerHTML = m.aportes.length===0
+            ? '<p style="text-align:center;color:var(--text-light);padding:40px">No hay aportes registrados</p>'
+            : `<div class="aportes-list">
+                <div class="aportes-header">
+                    <h3 style="font-size:16px">Total: ${m.aportes.length} aporte(s)</h3>
+                    <div style="font-size:20px;font-weight:bold;color:var(--success)">${formatCOP(m.ahorrado)}</div>
+                </div>
+                ${m.aportes.map(a=>`
+                    <div class="aporte-item">
+                        <div class="aporte-info">
+                            <div style="font-weight:600;margin-bottom:5px">${formatCOP(a.monto)}</div>
+                            <div style="font-size:11px;color:var(--text-light);margin-bottom:5px">${new Date(a.fecha).toLocaleDateString()} ${new Date(a.fecha).toLocaleTimeString()}</div>
+                            <span class="aporte-origen-badge badge-${a.origen}">${labels[a.origen]}</span>
+                        </div>
+                        <div style="display:flex;gap:5px">
+                            <button onclick="editarAporte(${id},${a.id})" class="btn-warning btn-small">âœï¸</button>
+                            <button onclick="eliminarAporte(${id},${a.id})" class="btn-danger btn-small">ðŸ—‘ï¸</button>
+                        </div>
+                    </div>`).join('')}
+            </div>`;
+        document.getElementById('aportesModal').classList.add('active');
+    }
+    function closeAportesModal() { document.getElementById('aportesModal').classList.remove('active'); currentGoalId=null; }
+    function editarAporte(goalId,aporteId) {
+        const m=data.metas.find(m=>m.id===goalId); if (!m) return;
+        const a=m.aportes.find(a=>a.id===aporteId); if (!a) return;
+        const str=prompt(`Monto actual: ${formatCOP(a.monto)}\nNuevo monto:`,numToFormatted(Math.floor(a.monto)));
+        if (!str) return;
+        const nuevo=parseFormattedNumber(str);
+        if (!nuevo||nuevo<=0) return;
+        if (m.ahorrado+(nuevo-a.monto)>m.valor) { alert('Excede el valor de la meta'); return; }
+        m.ahorrado=m.ahorrado-a.monto+nuevo; a.monto=nuevo;
+        if (m.ahorrado>=m.valor&&!m.completada) { m.completada=true; alert('ðŸŽ‰ Â¡Meta completada!'); }
+        else if (m.ahorrado<m.valor) m.completada=false;
+        saveData(); renderMetas(); openAportesModal(goalId);
+    }
+    function eliminarAporte(goalId,aporteId) {
+        if (!confirm('Â¿Eliminar este aporte?')) return;
+        const m=data.metas.find(m=>m.id===goalId); if (!m) return;
+        const a=m.aportes.find(a=>a.id===aporteId); if (!a) return;
+        m.ahorrado-=a.monto; m.aportes=m.aportes.filter(x=>x.id!==aporteId);
+        if (m.ahorrado<m.valor) m.completada=false;
+        if (a.origen==='secundario') data.ingresosExtras.push({id:Date.now(),descripcion:`DevoluciÃ³n: ${m.nombre}`,monto:a.monto,fecha:new Date().toISOString()});
+        saveData(); renderMetas(); openAportesModal(goalId);
+    }
+    function renderMetas() {
+        const g=document.getElementById('goalsGrid');
+        if (!data.metas.length) { g.innerHTML='<div class="empty-state"><div class="empty-state-icon">ðŸŽ¯</div><p>No tienes metas de ahorro. Â¡Crea tu primera meta!</p></div>'; return; }
+        g.innerHTML=data.metas.map(m=>{
+            const pct=Math.min((m.ahorrado/m.valor)*100,100);
+            return `<div class="goal-card ${m.completada?'completed success-animation':''}">
+                ${!m.completada?`<button class="goal-edit-btn" onclick="openEditGoalModal(${m.id})">âœï¸</button>`:''}
+                <img src="${m.imagen}" alt="${m.nombre}" class="goal-image">
+                <div class="goal-content">
+                    <div class="goal-title">${m.nombre} ${m.completada?'âœ…':''}</div>
+                    <div class="goal-stats">
+                        <div><div style="color:var(--text-light);font-size:12px">Ahorrado</div><div style="font-weight:bold;color:var(--success)">${formatCOP(m.ahorrado)}</div></div>
+                        <div><div style="color:var(--text-light);font-size:12px">Restante</div><div style="font-weight:bold;color:var(--text-dark)">${formatCOP(m.valor-m.ahorrado)}</div></div>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${m.completada?'var(--success)':'var(--gradient)'}"></div></div>
+                    <div style="text-align:center;font-weight:bold;color:${m.completada?'var(--success)':'var(--primary)'};margin-bottom:10px">${pct.toFixed(1)}% completado</div>
+                    ${m.fecha?`<div style="text-align:center;font-size:12px;color:var(--text-light);margin-bottom:15px">ðŸ“… ${new Date(m.fecha).toLocaleDateString()}</div>`:''}
+                    <div class="goal-actions">
+                        ${!m.completada?`<button onclick="openAporteModal(${m.id})" class="btn-success">ðŸ’° Aportar</button>`:''}
+                        <button onclick="openAportesModal(${m.id})" class="btn-primary">ðŸ“‹ Ver</button>
+                        <button onclick="eliminarMeta(${m.id})" class="btn-danger">ðŸ—‘ï¸</button>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // ============================================================
+    // GRÃFICOS
+    // ============================================================
+    function updateCharts() { updateCategoryChart(); updateComparisonChart(); }
+    function updateCategoryChart() {
+        const ctx=document.getElementById('categoryChart'); if (!ctx) return;
+        const cats={};
+        data.gastos.forEach(g=>{ cats[g.categoria]=(cats[g.categoria]||0)+g.monto; });
+        if (charts.cat) charts.cat.destroy();
+        charts.cat=new Chart(ctx,{type:'pie',data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats),backgroundColor:['#ef4444','#3b82f6','#f59e0b','#a855f7','#6b7280']}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:getComputedStyle(document.documentElement).getPropertyValue('--text-dark')}},title:{display:true,text:'Gastos por CategorÃ­a',color:getComputedStyle(document.documentElement).getPropertyValue('--text-dark'),font:{size:14,weight:'bold'}}}}});
+    }
+    function updateComparisonChart() {
+        const ctx=document.getElementById('comparisonChart'); if (!ctx) return;
+        const t=calcularTotales();
+        if (charts.comp) charts.comp.destroy();
+        charts.comp=new Chart(ctx,{type:'bar',data:{labels:['Ingresos','Gastos','Ahorros','Secundario'],datasets:[{label:'Monto',data:[t.totalIngresos,t.totalGastos,t.totalAhorros,t.ahorroSecundario],backgroundColor:['#6366f1','#ef4444','#10b981','#22c55e']}]},options:{responsive:true,plugins:{legend:{display:false},title:{display:true,text:'Comparativa Financiera',color:getComputedStyle(document.documentElement).getPropertyValue('--text-dark'),font:{size:14,weight:'bold'}}},scales:{y:{beginAtZero:true,ticks:{color:getComputedStyle(document.documentElement).getPropertyValue('--text-light')},grid:{color:getComputedStyle(document.documentElement).getPropertyValue('--border')}},x:{ticks:{color:getComputedStyle(document.documentElement).getPropertyValue('--text-light')},grid:{color:getComputedStyle(document.documentElement).getPropertyValue('--border')}}}}});
+    }
+
+    // ============================================================
+    // CONTROL DE DEUDAS
+    // ============================================================
+    function agregarDeuda() {
+        const nombre=document.getElementById('deudaNombre').value.trim();
+        const total=parseFormattedNumber(document.getElementById('deudaTotal').value);
+        const abonado=parseFormattedNumber(document.getElementById('deudaAbonado').value);
+        if (!nombre) { alert('Ingresa el nombre de la deuda'); return; }
+        if (!total||total<=0) { alert('Ingresa un valor total vÃ¡lido'); return; }
+        if (abonado<0) { alert('El abonado no puede ser negativo'); return; }
+        if (abonado>total) { alert('El abonado no puede ser mayor al total'); return; }
+        const restante=total-abonado;
+        deudas.push({id:Date.now(),nombre,total,abonado,restante,estado:restante===0?'Pagada':'Pendiente',fecha:new Date().toISOString()});
+        document.getElementById('deudaNombre').value='';
+        document.getElementById('deudaTotal').value='';
+        document.getElementById('deudaAbonado').value='';
+        saveDeudas();
+    }
+    function openEditDeudaModal(id) {
+        const d=deudas.find(d=>d.id===id); if (!d) return;
+        editingDeudaId=id;
+        document.getElementById('editDeudaNombre').value=d.nombre;
+        document.getElementById('editDeudaTotal').value=numToFormatted(d.total);
+        document.getElementById('editDeudaAbonado').value=numToFormatted(d.abonado);
+        document.getElementById('editDeudaModal').classList.add('active');
+    }
+    function closeEditDeudaModal() { document.getElementById('editDeudaModal').classList.remove('active'); editingDeudaId=null; }
+    function guardarEdicionDeuda() {
+        const d=deudas.find(d=>d.id===editingDeudaId); if (!d) return;
+        const nombre=document.getElementById('editDeudaNombre').value.trim();
+        const total=parseFormattedNumber(document.getElementById('editDeudaTotal').value);
+        const abonado=parseFormattedNumber(document.getElementById('editDeudaAbonado').value);
+        if (!nombre) { alert('Ingresa el nombre'); return; }
+        if (!total||total<=0) { alert('Valor total invÃ¡lido'); return; }
+        if (abonado<0) { alert('El abonado no puede ser negativo'); return; }
+        if (abonado>total) { alert('El abonado no puede superar el total'); return; }
+        d.nombre=nombre; d.total=total; d.abonado=abonado; d.restante=total-abonado; d.estado=d.restante===0?'Pagada':'Pendiente';
+        closeEditDeudaModal(); saveDeudas();
+    }
+    function eliminarDeuda(id) {
+        if (confirm('Â¿Eliminar esta deuda?')) { deudas=deudas.filter(d=>d.id!==id); saveDeudas(); }
+    }
+    function abonarDeuda(id) {
+        const d=deudas.find(d=>d.id===id); if (!d) return;
+        if (d.estado==='Pagada') { alert('Esta deuda ya estÃ¡ pagada'); return; }
+        const str=prompt(`ðŸ’³ Abonar a: ${d.nombre}\nâ³ Restante: ${formatCOP(d.restante)}\n\nÂ¿CuÃ¡nto deseas abonar?`, numToFormatted(Math.floor(d.restante)));
+        if (!str) return;
+        const monto=parseFormattedNumber(str);
+        if (!monto||monto<=0) { alert('Monto invÃ¡lido'); return; }
+        if (monto>d.restante) { alert(`Excede el saldo restante. MÃ¡ximo: ${formatCOP(d.restante)}`); return; }
+        d.abonado+=monto; d.restante=d.total-d.abonado; d.estado=d.restante===0?'Pagada':'Pendiente';
+        if (d.estado==='Pagada') setTimeout(()=>alert('ðŸŽ‰ Â¡Deuda pagada completamente!'),200);
+        saveDeudas();
+    }
+    function calcularTotalesDeudas() {
+        return {
+            totalDeuda: deudas.reduce((s,d)=>s+d.total,0),
+            totalAbonado: deudas.reduce((s,d)=>s+d.abonado,0),
+            totalPendiente: deudas.reduce((s,d)=>s+d.restante,0),
+            total: deudas.length,
+            pagadas: deudas.filter(d=>d.estado==='Pagada').length
+        };
+    }
+    function renderDeudasDashboard() {
+        const t=calcularTotalesDeudas();
+        const pct=t.totalDeuda>0?((t.totalAbonado/t.totalDeuda)*100).toFixed(1):0;
+        const kpis=[
+            {icon:'ðŸ’³',label:'Total Deudas',value:formatCOP(t.totalDeuda),color:'#ef4444'},
+            {icon:'âœ…',label:'Total Abonado',value:formatCOP(t.totalAbonado),color:'#10b981'},
+            {icon:'â³',label:'Total Pendiente',value:formatCOP(t.totalPendiente),color:'#f59e0b'},
+            {icon:'ðŸ“Š',label:'Progreso General',value:`${pct}%`,color:'#6366f1'},
+            {icon:'ðŸ†',label:'Deudas Pagadas',value:`${t.pagadas} / ${t.total}`,color:'#10b981'}
+        ];
+        document.getElementById('deudasDashboard').innerHTML=kpis.map(k=>`
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:${k.color}20;color:${k.color}">${k.icon}</div>
+                <div class="kpi-label">${k.label}</div>
+                <div class="kpi-value">${k.value}</div>
+            </div>`).join('');
+    }
+    function renderDeudas() {
+        const c=document.getElementById('deudasList');
+        if (!deudas.length) {
+            c.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">ðŸ’³</div><p>No tienes deudas registradas. Â¡Agrega tu primera deuda!</p></div>';
+            return;
+        }
+        c.innerHTML=deudas.map(d=>{
+            const pct=d.total>0?Math.min((d.abonado/d.total)*100,100):0;
+            const color=d.estado==='Pagada'?'var(--success)':'var(--gradient)';
+            return `<div class="debt-card ${d.estado==='Pagada'?'paid':''}">
+                <div class="debt-header">
+                    <div class="debt-name">ðŸ’³ ${d.nombre}</div>
+                    <span class="debt-status ${d.estado==='Pagada'?'pagada':'pendiente'}">${d.estado==='Pagada'?'âœ… Pagada':'â³ Pendiente'}</span>
+                </div>
+                <div>
+                    <div class="debt-detail-row"><span class="debt-detail-label">ðŸ’° Valor Total</span><span class="debt-detail-value" style="color:var(--danger)">${formatCOP(d.total)}</span></div>
+                    <div class="debt-detail-row"><span class="debt-detail-label">âœ… Abonado</span><span class="debt-detail-value" style="color:var(--success)">${formatCOP(d.abonado)}</span></div>
+                    <div class="debt-detail-row" style="border:none"><span class="debt-detail-label">â³ Saldo Restante</span><span class="debt-detail-value" style="color:${d.restante>0?'var(--warning)':'var(--success)'}">${formatCOP(d.restante)}</span></div>
+                </div>
+                <div class="debt-progress-bar"><div class="debt-progress-fill" style="width:${pct}%;background:${color}"></div></div>
+                <div style="text-align:center;font-size:13px;font-weight:600;color:${d.estado==='Pagada'?'var(--success)':'var(--primary)'};margin-bottom:8px">${pct.toFixed(1)}% pagado</div>
+                <div style="font-size:11px;color:var(--text-light);text-align:center;margin-bottom:12px">ðŸ“… ${new Date(d.fecha).toLocaleDateString()}</div>
+                <div class="debt-actions">
+                    ${d.estado!=='Pagada'?`<button onclick="abonarDeuda(${d.id})" class="btn-success">ðŸ’° Abonar</button>`:''}
+                    <button onclick="openEditDeudaModal(${d.id})" class="btn-warning">âœï¸ Editar</button>
+                    <button onclick="eliminarDeuda(${d.id})" class="btn-danger">ðŸ—‘ï¸</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // InicializaciÃ³n â€” la portada se muestra por defecto
+    window.onload = () => {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(()=>{});
+        }
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').style.display = 'flex';
+        });
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                document.getElementById('installBtn').style.display = 'none';
+            }
+        });
+    };
+</script>
+
+<!-- PWA Install Button -->
+<div id="installBtn" style="display:none;position:fixed;bottom:20px;right:20px;z-index:9999;background:linear-gradient(135deg,#6366f1,#10b981);color:white;padding:12px 20px;border-radius:50px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 8px 25px rgba(99,102,241,0.4);align-items:center;gap:8px;border:none;">
+    &#128242; Instalar App
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </body>
 </html>
